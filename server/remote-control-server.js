@@ -133,14 +133,9 @@ class PresentationServer {
     }
     
     serveControlInterface(res) {
-        // Detect if running in production environment
-        const isProduction = process.env.NODE_ENV === 'production';
-        // Use secure WebSocket protocol in production
-        const wsProtocol = isProduction ? 'wss' : 'ws';
-        // **UPDATED SERVER URL**
-        const serverHost = isProduction ? 'motion-presentation-server.onrender.com' : 'localhost';
-        // Use environment port or default port
-        const serverPort = isProduction ? '' : `:${this.port}`;
+        const wsProtocol = "wss";
+        const serverHost = "motion-presentation-server.onrender.com";
+        const serverPort = "";
         
         const html = `
 <!DOCTYPE html>
