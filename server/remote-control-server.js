@@ -2,52 +2,67 @@ const WebSocket = require('ws');
 const http = require('http');
 
 class PresentationServer {
-    constructor(port = 8080) {
+    constructor(port = process.env.PORT || 8080) {
+        // Set port from environment variable for production deployment
         this.port = port;
+        // Initialize Set to store connected WebSocket clients
         this.clients = new Set();
+        // Define initial presentation state
         this.currentState = {
             currentSlide: 1,
             totalSlides: 10,
             isAutoMode: false
         };
         
+        // Initialize the server setup
         this.setupServer();
     }
     
     setupServer() {
-        // Create HTTP server
+        // Create HTTP server to handle web requests
         this.httpServer = http.createServer((req, res) => {
+            // Add CORS headers for cross-origin requests
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+            res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+            
+            // Route handling for different endpoints
             if (req.url === '/control' || req.url === '/control.html') {
                 this.serveControlInterface(res);
             } else if (req.url === '/') {
                 res.writeHead(200, { 'Content-Type': 'text/html' });
                 res.end(`
-                    <h1>Presentation Server</h1>
-                    <p>Server is running!</p>
+                    <h1>🎯 Motion Presentation Server</h1>
+                    <p>Server is running on port ${this.port}!</p>
                     <p><a href="/control">Remote Control Interface</a></p>
+                    <p><a href="https://YOUR-GITHUB-USERNAME.github.io/motion-presentation" target="_blank">View Presentation</a></p>
                 `);
             } else {
+                // Return 404 for unknown routes
                 res.writeHead(404);
                 res.end('Not found');
             }
         });
         
-        // Create WebSocket server
+        // Create WebSocket server attached to HTTP server
         this.wss = new WebSocket.Server({ 
             server: this.httpServer,
             path: '/presentation'
         });
         
+        // Handle new WebSocket connections
         this.wss.on('connection', (ws, req) => {
             console.log('🔗 Client connected:', req.socket.remoteAddress);
+            // Add new client to the clients set
             this.clients.add(ws);
             
-            // Send current state to new client
+            // Send current presentation state to newly connected client
             ws.send(JSON.stringify({
                 type: 'state',
                 ...this.currentState
             }));
             
+            // Handle incoming messages from client
             ws.on('message', (message) => {
                 try {
                     const data = JSON.parse(message);
@@ -57,17 +72,20 @@ class PresentationServer {
                 }
             });
             
+            // Handle client disconnection
             ws.on('close', () => {
                 console.log('🔌 Client disconnected');
                 this.clients.delete(ws);
             });
             
+            // Handle WebSocket errors
             ws.on('error', (error) => {
                 console.error('WebSocket error:', error);
                 this.clients.delete(ws);
             });
         });
         
+        // Start the HTTP server listening on specified port
         this.httpServer.listen(this.port, () => {
             console.log(`🚀 Presentation server running on port ${this.port}`);
             console.log(`📱 Control interface: http://localhost:${this.port}/control`);
@@ -76,10 +94,14 @@ class PresentationServer {
     }
     
     handleMessage(ws, data) {
+        // Log received message for debugging
         console.log('📨 Received:', data);
         
+        // Handle state updates from clients
         if (data.type === 'state') {
+            // Update server's current state with received data
             this.currentState = { ...this.currentState, ...data };
+            // Broadcast state change to all other clients
             this.broadcastToOtherClients(data, ws);
         } else if (data.type === 'command') {
             // Broadcast command to all presentation clients
@@ -88,6 +110,7 @@ class PresentationServer {
     }
     
     broadcastToOtherClients(data, sender) {
+        // Send data to all connected clients except the sender
         this.clients.forEach(client => {
             if (client !== sender && client.readyState === WebSocket.OPEN) {
                 client.send(JSON.stringify(data));
@@ -96,6 +119,15 @@ class PresentationServer {
     }
     
     serveControlInterface(res) {
+        // Detect if running in production environment
+        const isProduction = process.env.NODE_ENV === 'production';
+        // Use secure WebSocket protocol in production
+        const wsProtocol = isProduction ? 'wss' : 'ws';
+        // **THIS IS WHERE YOU NEED TO CHANGE THE URL**
+        const serverHost = isProduction ? 'motion-presentation.onrender.com' : 'localhost';
+        // Use environment port or default port
+        const serverPort = isProduction ? '' : `:${this.port}`;
+        
         const html = `
 <!DOCTYPE html>
 <html>
@@ -103,7 +135,9 @@ class PresentationServer {
     <title>Presentation Remote Control</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        /* Reset default styles */
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Set body styling with dark theme */
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0a0a0a; 
@@ -111,16 +145,19 @@ class PresentationServer {
             padding: 2rem;
             min-height: 100vh;
         }
+        /* Center container with max width */
         .container { 
             max-width: 600px; 
             margin: 0 auto; 
             text-align: center;
         }
+        /* Style main heading */
         h1 { 
             font-size: 2rem; 
             margin-bottom: 2rem; 
             color: #4ecdc4;
         }
+        /* Style status display area */
         .status { 
             background: rgba(255, 255, 255, 0.1); 
             padding: 1rem; 
@@ -128,12 +165,14 @@ class PresentationServer {
             margin-bottom: 2rem;
             backdrop-filter: blur(10px);
         }
+        /* Grid layout for control buttons */
         .controls { 
             display: grid; 
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
             gap: 1rem; 
             margin-bottom: 2rem;
         }
+        /* Style for all buttons */
         .btn { 
             background: linear-gradient(45deg, #ff6b6b, #4ecdc4); 
             border: none; 
@@ -145,13 +184,12 @@ class PresentationServer {
             font-weight: bold;
             transition: all 0.3s ease;
         }
+        /* Button hover effects */
         .btn:hover { 
             transform: translateY(-2px); 
             box-shadow: 0 10px 30px rgba(255, 255, 255, 0.2);
         }
-        .btn:active { 
-            transform: translateY(0);
-        }
+        /* Slide navigation layout */
         .slide-nav { 
             display: flex; 
             align-items: center; 
@@ -159,6 +197,7 @@ class PresentationServer {
             gap: 1rem; 
             margin-bottom: 2rem;
         }
+        /* Style for slide number input */
         .slide-input { 
             background: rgba(255, 255, 255, 0.1); 
             border: 1px solid rgba(255, 255, 255, 0.3); 
@@ -168,28 +207,34 @@ class PresentationServer {
             width: 80px; 
             text-align: center;
         }
+        /* Connection status indicator styling */
         .connection-status { 
             padding: 0.5rem; 
             border-radius: 5px; 
             margin-bottom: 1rem;
         }
+        /* Connected state styling */
         .connected { background: rgba(78, 205, 196, 0.2); }
+        /* Disconnected state styling */
         .disconnected { background: rgba(255, 107, 107, 0.2); }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎯 Presentation Remote Control</h1>
+        <h1>🎯 Remote Control</h1>
         
+        <!-- Connection status indicator -->
         <div class="connection-status" id="connectionStatus">
             Connecting...
         </div>
         
+        <!-- Current presentation status display -->
         <div class="status" id="status">
             <div>Current Slide: <span id="currentSlide">1</span> / <span id="totalSlides">10</span></div>
             <div>Auto Mode: <span id="autoMode">Off</span></div>
         </div>
         
+        <!-- Slide navigation controls -->
         <div class="slide-nav">
             <button class="btn" onclick="sendCommand('previous')">← Previous</button>
             <input type="number" class="slide-input" id="slideInput" min="1" max="10" value="1">
@@ -197,6 +242,7 @@ class PresentationServer {
             <button class="btn" onclick="sendCommand('next')">Next →</button>
         </div>
         
+        <!-- Main control buttons -->
         <div class="controls">
             <button class="btn" onclick="sendCommand('play_timeline')">Play Timeline</button>
             <button class="btn" onclick="sendCommand('demonstrate_easing')">Demo Easing</button>
@@ -208,39 +254,46 @@ class PresentationServer {
     </div>
 
     <script>
+        // WebSocket connection variable
         let ws = null;
+        // Connection state tracking
         let isConnected = false;
         
+        // Function to establish WebSocket connection
         function connect() {
-            ws = new WebSocket('ws://localhost:8080/presentation');
+            // **THIS IS THE UPDATED WEBSOCKET URL**
+            const wsUrl = '${wsProtocol}://${serverHost}${serverPort}/presentation';
+            ws = new WebSocket(wsUrl);
             
+            // Handle successful connection
             ws.onopen = () => {
                 isConnected = true;
                 updateConnectionStatus('Connected', true);
-                console.log('Remote control connected');
             };
             
+            // Handle incoming messages
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
-                console.log('Received:', data);
                 if (data.type === 'state') {
                     updateStatus(data);
                 }
             };
             
+            // Handle connection close
             ws.onclose = () => {
                 isConnected = false;
                 updateConnectionStatus('Disconnected', false);
-                console.log('Remote control disconnected');
+                // Attempt to reconnect after 3 seconds
                 setTimeout(connect, 3000);
             };
             
-            ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
+            // Handle connection errors
+            ws.onerror = () => {
                 updateConnectionStatus('Connection Error', false);
             };
         }
         
+        // Function to send commands to presentation
         function sendCommand(command, params = null) {
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({
@@ -249,17 +302,16 @@ class PresentationServer {
                     params: params,
                     timestamp: Date.now()
                 }));
-                console.log('Sent command:', command, params);
-            } else {
-                console.log('WebSocket not connected');
             }
         }
         
+        // Function to navigate to specific slide
         function goToSlide() {
             const slideNumber = parseInt(document.getElementById('slideInput').value);
             sendCommand('goto', slideNumber);
         }
         
+        // Function to update status display
         function updateStatus(data) {
             document.getElementById('currentSlide').textContent = data.currentSlide || 1;
             document.getElementById('totalSlides').textContent = data.totalSlides || 10;
@@ -267,16 +319,17 @@ class PresentationServer {
             document.getElementById('slideInput').value = data.currentSlide || 1;
         }
         
+        // Function to update connection status indicator
         function updateConnectionStatus(message, connected) {
             const statusEl = document.getElementById('connectionStatus');
             statusEl.textContent = message;
             statusEl.className = 'connection-status ' + (connected ? 'connected' : 'disconnected');
         }
         
-        // Connect on load
+        // Initialize connection on page load
         connect();
         
-        // Keyboard shortcuts
+        // Add keyboard shortcuts for presentation control
         document.addEventListener('keydown', (e) => {
             switch(e.key) {
                 case 'ArrowLeft':
@@ -300,10 +353,11 @@ class PresentationServer {
 </html>
         `;
         
+        // Send HTML response to client
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(html);
     }
 }
 
-// Start server
-const server = new PresentationServer(8080);
+// Create and start the presentation server instance
+const server = new PresentationServer();
