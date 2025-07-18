@@ -1,0 +1,2478 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motion, Meaning, and Microinteractions</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.19/bundled/lenis.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        .slide {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide-content {
+            max-width: 1200px;
+            width: 100%;
+            text-align: center;
+            z-index: 2;
+        }
+
+        .slide h1 {
+            font-size: clamp(3rem, 8vw, 8rem);
+            font-weight: 900;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 8s ease infinite;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .slide h2 {
+            font-size: clamp(2rem, 5vw, 4rem);
+            font-weight: 700;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .slide h3 {
+            font-size: clamp(1.5rem, 3vw, 2.5rem);
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #4ecdc4;
+        }
+
+        .slide p {
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            margin-bottom: 1.5rem;
+            opacity: 0.8;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .code-block {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            font-size: 0.9rem;
+            text-align: left;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow-x: auto;
+        }
+
+        .demo-container {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 3rem;
+            margin: 2rem 0;
+            backdrop-filter: blur(20px);
+            position: relative;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .floating-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+        }
+
+        .interactive-element {
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border-radius: 20px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            user-select: none;
+        }
+
+        .static-element {
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(45deg, #666, #888);
+            border-radius: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            user-select: none;
+            opacity: 0.6;
+        }
+
+        .morphing-shape {
+            width: 150px;
+            height: 150px;
+            background: linear-gradient(45deg, #45b7d1, #96ceb4);
+            border-radius: 50%;
+            margin: 0 1rem;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .performance-metrics {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1rem;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .slide-counter {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .live-demo {
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid rgba(78, 205, 196, 0.3);
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .live-demo::before {
+            content: 'LIVE DEMO';
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            font-size: 0.8rem;
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+
+        .timeline-visualization {
+            height: 300px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            margin: 2rem 0;
+        }
+
+        .timeline-bar {
+            position: absolute;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(to top, #ff6b6b, #4ecdc4);
+            border-radius: 2px;
+            transform-origin: bottom;
+        }
+
+        .smooth-scroll-demo {
+            height: 400px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            margin: 2rem 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .scroll-content {
+            height: 800px;
+            background: linear-gradient(to bottom, 
+                rgba(255, 107, 107, 0.1) 0%, 
+                rgba(78, 205, 196, 0.1) 25%, 
+                rgba(69, 183, 209, 0.1) 50%, 
+                rgba(150, 206, 180, 0.1) 75%, 
+                rgba(255, 107, 107, 0.1) 100%);
+            position: relative;
+            border-radius: 15px;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 0.5rem;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            z-index: 10;
+            color: #4ecdc4;
+            pointer-events: none;
+        }
+
+        .scroll-trigger-demo {
+            height: 400px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 15px;
+            position: relative;
+            overflow-y: auto;
+            margin: 2rem 0;
+        }
+
+        .scroll-trigger-demo::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .scroll-trigger-demo::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .scroll-trigger-demo::-webkit-scrollbar-thumb {
+            background: rgba(78, 205, 196, 0.8);
+            border-radius: 4px;
+        }
+
+        .scroll-trigger-element {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border-radius: 50%;
+            margin: 50px auto;
+            position: relative;
+        }
+
+        .easing-track {
+            width: 100%;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            position: relative;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .easing-ball {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: white;
+        }
+
+        .final-demo-container {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background: radial-gradient(circle at center, rgba(255, 107, 107, 0.1) 0%, rgba(78, 205, 196, 0.1) 50%, rgba(69, 183, 209, 0.1) 100%);
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .morphing-logo {
+            font-size: 4rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease infinite;
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .tech-stack {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .tech-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem 2rem;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-weight: bold;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .tech-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.1);
+        }
+
+        .slide-7 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .slide-8 {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .slide-9 {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .slide-10 {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        @keyframes gradientShift {
+
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .highlight-text {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: bold;
+        }
+
+        .slide-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 50%, rgba(255, 107, 107, 0.1) 0%, transparent 70%);
+            z-index: 0;
+        }
+
+        .presentation-controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .micro-demo-container {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .micro-demo-item {
+            width: 180px;
+            height: 180px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border-radius: 20px;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        .ripple-effect {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(0);
+            pointer-events: none;
+        }
+
+        .particle-burst {
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .orbit-container {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .orbit-element {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border-radius: 50%;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .neural-network {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .neural-node {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #4ecdc4;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #4ecdc4;
+        }
+
+        .neural-connection {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #4ecdc4, transparent);
+            transform-origin: left center;
+        }
+
+        .stats-display {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+            display: flex;
+            gap: 2rem;
+        }
+
+        .holographic-effect {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.1) 50%, transparent 60%);
+            animation: holographicScan 3s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes holographicScan {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        .matrix-rain {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .matrix-column {
+            position: absolute;
+            top: -100%;
+            font-family: monospace;
+            font-size: 14px;
+            color: #4ecdc4;
+            opacity: 0.7;
+            animation: matrixFall 3s linear infinite;
+        }
+
+        @keyframes matrixFall {
+            to {
+                top: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Performance Metrics -->
+    <div class="performance-metrics">
+        <div>FPS: <span id="fps">60</span></div>
+        <div>Frame Time: <span id="frameTime">16.67ms</span></div>
+        <div>Animations: <span id="activeAnimations">0</span></div>
+    </div>
+
+    <!-- Slide Counter -->
+    <div class="slide-counter">
+        <span id="currentSlide">1</span> / <span id="totalSlides">10</span>
+    </div>
+
+    <!-- Navigation -->
+    <div class="navigation">
+        <button class="nav-btn" onclick="previousSlide()">← Previous</button>
+        <button class="nav-btn" onclick="nextSlide()">Next →</button>
+    </div>
+
+    <!-- Presentation Controls -->
+    <div class="presentation-controls">
+        <button class="nav-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen">⛶</button>
+        <button class="nav-btn" onclick="exportPresentation()" title="Export Data">💾</button>
+    </div>
+
+    <!-- Slide 1: Title -->
+    <div class="slide" id="slide-1">
+        <div class="slide-bg"></div>
+        <div class="floating-particles"></div>
+        <div class="slide-content">
+            <h1>Motion, Meaning, and Microinteractions</h1>
+            <h2>Designing Interfaces That Feel Alive</h2>
+            <p>A deep dive into performance-driven animation architecture</p>
+            <!-- <div class="tech-stack">
+                <div class="tech-item">GSAP 3.12</div>
+                <div class="tech-item">Lenis</div>
+                <div class="tech-item">ScrollTrigger</div>
+                <div class="tech-item">60fps</div>
+            </div> -->
+        </div>
+    </div>
+
+    <!-- Slide 2: The Problem -->
+    <div class="slide" id="slide-2">
+        <div class="slide-content">
+            <h2>The Problem with Static Interfaces</h2>
+            <p>Modern users expect interfaces that respond, breathe, and provide immediate feedback. Static UIs feel
+                disconnected and unintuitive.</p>
+            <div class="demo-container">
+                <div class="static-element">
+                    Static Element
+                </div>
+                <div class="interactive-element" id="animated-demo">
+                    Animated Element
+                </div>
+            </div>
+            <p><span class="highlight-text">47% increase</span> in user engagement with properly animated interfaces</p>
+        </div>
+    </div>
+
+    <!-- Slide 3: Performance Architecture -->
+    <div class="slide" id="slide-3">
+        <div class="slide-content">
+            <h2>Performance-First Animation Architecture</h2>
+            <div class="code-block">
+                // GSAP + RAF for 60fps animations
+                const performanceManager = {
+                activeAnimations: new Set(),
+                raf: null,
+
+                register(animation) {
+                this.activeAnimations.add(animation);
+                this.startLoop();
+                },
+
+                startLoop() {
+                if (!this.raf) {
+                this.raf = requestAnimationFrame(this.tick.bind(this));
+                }
+                },
+
+                tick() {
+                // Update performance metrics
+                this.updateMetrics();
+                this.raf = requestAnimationFrame(this.tick.bind(this));
+                }
+                };
+            </div>
+            <div class="timeline-visualization" id="timeline-viz">
+                <!-- Timeline bars will be generated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 4: GSAP Timeline Mastery -->
+    <div class="slide" id="slide-4">
+        <div class="slide-content">
+            <h2>GSAP Timeline Mastery</h2>
+            <div class="code-block">
+                // Complex timeline orchestration
+                const masterTimeline = gsap.timeline({
+                paused: true,
+                onUpdate: () => updateProgressBar()
+                });
+
+                masterTimeline
+                .to(".element", { scale: 1.2, duration: 0.3 })
+                .to(".element", { rotation: 360, duration: 0.5 }, "-=0.1")
+                .to(".element", { y: -100, duration: 0.4, ease: "back.out(1.7)" })
+                .set(".element", { transformOrigin: "center center" });
+            </div>
+            <div class="live-demo">
+                <div class="morphing-shape" id="timeline-demo-1"></div>
+                <div class="morphing-shape" id="timeline-demo-2"></div>
+                <div class="morphing-shape" id="timeline-demo-3"></div>
+                <button class="nav-btn" onclick="playTimeline()" style="margin-top: 2rem;">Play Timeline</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 5: Lenis Smooth Scrolling -->
+    <div class="slide" id="slide-5">
+        <div class="slide-content">
+            <h2>Lenis: Buttery Smooth Scrolling</h2>
+            <div class="code-block">
+                // Lenis configuration for premium feel
+                const lenis = new Lenis({
+                duration: 1.2,
+                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                direction: 'vertical',
+                gestureDirection: 'vertical',
+                smooth: true,
+                mouseMultiplier: 1,
+                smoothTouch: false,
+                touchMultiplier: 2,
+                infinite: false,
+                });
+
+                // Sync with GSAP
+                lenis.on('scroll', ScrollTrigger.update);
+                gsap.ticker.add((time) => lenis.raf(time * 1000));
+            </div>
+            <div class="smooth-scroll-demo" id="smooth-scroll-demo">
+                <div class="scroll-indicator">Scroll inside this container ↓</div>
+                <div class="scroll-content" id="smooth-scroll-content">
+                    <div style="padding: 2rem; text-align: center; margin-top: 50px;">
+                        <h3>Smooth Scrolling Demo</h3>
+                        <p>Notice the buttery smooth scrolling experience</p>
+                    </div>
+                    <div style="padding: 2rem; text-align: center; margin-top: 100px;">
+                        <h3>Parallax Elements</h3>
+                        <p>Elements move at different speeds</p>
+                    </div>
+                    <div style="padding: 2rem; text-align: center; margin-top: 150px;">
+                        <h3>Momentum Preserved</h3>
+                        <p>Natural feeling momentum and deceleration</p>
+                    </div>
+                    <div style="padding: 2rem; text-align: center; margin-top: 200px;">
+                        <h3>Easing Function</h3>
+                        <p>Custom easing creates natural deceleration</p>
+                    </div>
+                    <div style="padding: 2rem; text-align: center; margin-top: 250px;">
+                        <h3>GPU Accelerated</h3>
+                        <p>Smooth 60fps scrolling performance</p>
+                    </div>
+                </div>
+            </div>
+            <p>Lenis provides <span class="highlight-text">native-quality</span> scrolling that feels natural across all devices</p>
+        </div>
+    </div>
+
+    <!-- Slide 6: ScrollTrigger Integration -->
+    <div class="slide" id="slide-6">
+        <div class="slide-content">
+            <h2>ScrollTrigger: Viewport-Driven Animations</h2>
+            <div class="code-block">
+                // Advanced ScrollTrigger setup
+                ScrollTrigger.create({
+                trigger: ".animated-section",
+                start: "top 80%",
+                end: "bottom 20%",
+                scrub: 1,
+                anticipatePin: 1,
+                animation: gsap.timeline()
+                .to(".element", { scale: 1.5, duration: 1 })
+                .to(".element", { rotation: 180, duration: 1 }, "-=0.5")
+                .to(".element", { opacity: 0, duration: 0.5 }),
+                onEnter: () => console.log("Element entered viewport"),
+                onLeave: () => console.log("Element left viewport")
+                });
+            </div>
+            <div class="scroll-trigger-demo" id="scroll-trigger-demo">
+                <div
+                    style="height: 100px; display: flex; align-items: center; justify-content: center; color: #4ecdc4; font-size: 1.2rem;">
+                    ↓ Scroll down to see elements animate ↓
+                </div>
+                <div class="scroll-trigger-element" id="scroll-trigger-element-1"></div>
+                <div style="height: 100px;"></div>
+                <div class="scroll-trigger-element" id="scroll-trigger-element-2"></div>
+                <div style="height: 100px;"></div>
+                <div class="scroll-trigger-element" id="scroll-trigger-element-3"></div>
+                <div style="height: 100px;"></div>
+                <div class="scroll-trigger-element" id="scroll-trigger-element-4"></div>
+                <div style="height: 100px;"></div>
+                <div
+                    style="height: 100px; display: flex; align-items: center; justify-content: center; color: #4ecdc4; font-size: 1.2rem;">
+                    ↑ Scroll back up to see reverse animation ↑
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 7: Microinteractions -->
+    <div class="slide slide-7" id="slide-7">
+        <div class="slide-content">
+            <h2>Microinteractions: The Devil's in the Details</h2>
+            <p>Every hover, click, and transition should feel intentional and delightful</p>
+            <div class="demo-container">
+                <div class="micro-demo-container">
+                    <div class="micro-demo-item" id="micro-demo-1">
+                        <div class="holographic-effect"></div>
+                        Hover Me
+                    </div>
+                    <div class="micro-demo-item" id="micro-demo-2">
+                        Click Me
+                    </div>
+                    <div class="micro-demo-item" id="micro-demo-3">
+                        Long Press
+                    </div>
+                </div>
+            </div>
+            <p>Microinteractions create <span class="highlight-text">emotional connections</span> between users and
+                interfaces</p>
+        </div>
+    </div>
+
+    <!-- Slide 8: Easing Functions -->
+    <div class="slide slide-8" id="slide-8">
+        <div class="slide-content">
+            <h2>Easing: The Soul of Animation</h2>
+            <div class="code-block">
+                // Custom easing functions for personality
+                gsap.registerEase("customBounce", "0.68, -0.55, 0.265, 1.55");
+
+                // Physics-based easing
+                const springEase = (t) => {
+                const c4 = (2 * Math.PI) / 3;
+                return t === 0 ? 0 : t === 1 ? 1 :
+                -Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+                };
+            </div>
+            <div class="live-demo">
+                <div class="easing-track">
+                    <div class="easing-ball" id="easing-power2" style="background: #ff6b6b;">Power2</div>
+                </div>
+                <div class="easing-track">
+                    <div class="easing-ball" id="easing-back" style="background: #4ecdc4;">Back</div>
+                </div>
+                <div class="easing-track">
+                    <div class="easing-ball" id="easing-elastic" style="background: #45b7d1;">Elastic</div>
+                </div>
+                <div class="easing-track">
+                    <div class="easing-ball" id="easing-bounce" style="background: #96ceb4;">Bounce</div>
+                </div>
+                <button class="nav-btn" onclick="demonstrateEasing()" style="margin-top: 2rem;">Demonstrate
+                    Easing</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 9: Performance Optimization -->
+    <div class="slide slide-9" id="slide-9">
+        <div class="slide-content">
+            <h2>Performance Optimization Strategies</h2>
+            <div class="code-block">
+                // GPU acceleration and optimization
+                gsap.set(".element", {
+                force3D: true,
+                transformStyle: "preserve-3d",
+                backfaceVisibility: "hidden"
+                });
+
+                // Batch DOM operations
+                const batchUpdate = () => {
+                gsap.set(".multiple-elements", {
+                x: (i) => Math.random() * 100,
+                y: (i) => Math.random() * 100,
+                rotation: (i) => Math.random() * 360
+                });
+                };
+
+                // Use will-change strategically
+                gsap.set(".animating", { willChange: "transform" });
+            </div>
+            <p>Maintaining <span class="highlight-text">60fps</span> is non-negotiable for premium user experiences</p>
+        </div>
+    </div>
+
+    <!-- Slide 10: Grand Finale -->
+    <div class="slide slide-10" id="slide-10">
+        <div class="slide-content">
+            <h2>The Complete Animation Ecosystem</h2>
+            <p>Where performance meets art</p>
+            <div class="final-demo-container">
+                <div class="matrix-rain" id="matrix-rain"></div>
+                <div class="neural-network" id="neural-network"></div>
+                <div class="orbit-container">
+                    <div class="orbit-element" id="orbit-1"></div>
+                    <div class="orbit-element" id="orbit-2"></div>
+                    <div class="orbit-element" id="orbit-3"></div>
+                </div>
+                <div class="morphing-logo" id="morphing-logo">MOTION MASTERY</div>
+                <button class="nav-btn" onclick="triggerGrandFinale()"
+                    style="margin-top: 2rem; font-size: 1.2rem; padding: 1rem 2rem;">🚀 UNLEASH THE POWER</button>
+                <div class="stats-display" id="stats-display">
+                    <div>Elements: <span id="element-count">0</span></div>
+                    <div>Particles: <span id="particle-count">0</span></div>
+                    <div>Connections: <span id="connection-count">0</span></div>
+                </div>
+            </div>
+            <h3>Key Takeaways</h3>
+            <p>Performance + Personality = Engaging User Experiences</p>
+        </div>
+    </div>
+
+    <script>
+        // Initialize variables first to avoid hoisting issues
+        let currentSlideIndex = 0;
+        const totalSlides = 10;
+        let lenis;
+        let animationCount = 0;
+
+        // Performance monitoring
+        let lastTime = performance.now();
+        let frameCount = 0;
+        const performanceMetrics = {
+            fps: 60,
+            frameTime: 16.67,
+            activeAnimations: 0
+        };
+
+        // Initialize Lenis with error handling
+        function initializeLenis() {
+            try {
+                if (typeof Lenis !== 'undefined') {
+                    lenis = new Lenis({
+                        duration: 1.2,
+                        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                        direction: 'vertical',
+                        gestureDirection: 'vertical',
+                        smooth: true,
+                        mouseMultiplier: 1,
+                        smoothTouch: false,
+                        touchMultiplier: 2,
+                        infinite: false,
+                    });
+
+                    // Sync Lenis with GSAP
+                    lenis.on('scroll', ScrollTrigger.update);
+                    gsap.ticker.add((time) => {
+                        lenis.raf(time * 1000);
+                    });
+                } else {
+                    console.warn('Lenis library not loaded, using fallback scroll');
+                }
+            } catch (error) {
+                console.error('Error initializing Lenis:', error);
+            }
+        }
+
+        // Register GSAP plugins
+        gsap.registerPlugin(ScrollTrigger);
+
+        function updatePerformanceMetrics() {
+            const now = performance.now();
+            const delta = now - lastTime;
+            frameCount++;
+
+            if (frameCount % 60 === 0) {
+                performanceMetrics.fps = Math.round(1000 / delta);
+                performanceMetrics.frameTime = delta.toFixed(2);
+                performanceMetrics.activeAnimations = animationCount;
+
+                document.getElementById('fps').textContent = performanceMetrics.fps;
+                document.getElementById('frameTime').textContent = performanceMetrics.frameTime + 'ms';
+                document.getElementById('activeAnimations').textContent = performanceMetrics.activeAnimations;
+            }
+
+            lastTime = now;
+            requestAnimationFrame(updatePerformanceMetrics);
+        }
+
+        // Slide navigation functions
+        function nextSlide() {
+            if (currentSlideIndex < totalSlides - 1) {
+                currentSlideIndex++;
+                goToSlide(currentSlideIndex);
+            }
+        }
+
+        function previousSlide() {
+            if (currentSlideIndex > 0) {
+                currentSlideIndex--;
+                goToSlide(currentSlideIndex);
+            }
+        }
+
+        function goToSlide(index) {
+            const targetSlide = document.getElementById(`slide-${index + 1}`);
+            if (lenis) {
+                lenis.scrollTo(targetSlide, { duration: 1.5 });
+            } else {
+                targetSlide.scrollIntoView({ behavior: 'smooth' });
+            }
+            document.getElementById('currentSlide').textContent = index + 1;
+
+            // Send state update to remote control
+            if (remoteControl && remoteControl.isConnected) {
+                remoteControl.sendState();
+            }
+        }
+
+
+        // Floating particles animation
+        function createParticles() {
+            const container = document.querySelector('.floating-particles');
+            if (!container) return;
+
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                container.appendChild(particle);
+
+                gsap.to(particle, {
+                    x: Math.random() * 200 - 100,
+                    y: Math.random() * 200 - 100,
+                    duration: Math.random() * 3 + 2,
+                    repeat: -1,
+                    yoyo: true,
+                    ease: "sine.inOut",
+                    delay: Math.random() * 2
+                });
+            }
+        }
+
+        // Interactive elements
+        function setupInteractiveElements() {
+            // Animated demo element (NOT the static one)
+            const animatedDemo = document.getElementById('animated-demo');
+
+            if (animatedDemo) {
+                animatedDemo.addEventListener('mouseenter', () => {
+                    gsap.to(animatedDemo, {
+                        scale: 1.1,
+                        rotation: 5,
+                        duration: 0.3,
+                        ease: "back.out(1.7)"
+                    });
+                });
+
+                animatedDemo.addEventListener('mouseleave', () => {
+                    gsap.to(animatedDemo, {
+                        scale: 1,
+                        rotation: 0,
+                        duration: 0.3,
+                        ease: "power2.out"
+                    });
+                });
+            }
+
+            // Timeline visualization
+            createTimelineVisualization();
+
+            // Smooth scrolling demo
+            setupSmoothScrollDemo();
+
+            // ScrollTrigger demo
+            setupScrollTriggerDemo();
+
+            // Microinteraction demos
+            setupMicrointeractions();
+
+            // Grand finale setup
+            setupGrandFinale();
+        }
+
+        function createTimelineVisualization() {
+            const container = document.getElementById('timeline-viz');
+            if (!container) return;
+
+            const bars = [];
+
+            for (let i = 0; i < 20; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'timeline-bar';
+                bar.style.left = (i * 5) + '%';
+                bar.style.height = '0%';
+                container.appendChild(bar);
+                bars.push(bar);
+            }
+
+            // Animate bars
+            const tl = gsap.timeline({ repeat: -1, yoyo: true });
+            bars.forEach((bar, index) => {
+                tl.to(bar, {
+                    height: Math.random() * 100 + '%',
+                    duration: 0.5,
+                    ease: "power2.out"
+                }, index * 0.1);
+            });
+        }
+
+        function setupSmoothScrollDemo() {
+            const scrollContent = document.getElementById('smooth-scroll-content');
+            const demoContainer = scrollContent?.parentElement;
+            if (!scrollContent || !demoContainer) return;
+
+            let scrollPosition = 0;
+            let targetScroll = 0;
+            let isScrolling = false;
+
+            // Prevent page scroll when mouse is over the demo container
+            demoContainer.addEventListener('mouseenter', () => {
+                if (lenis) {
+                    lenis.stop();
+                }
+            });
+
+            demoContainer.addEventListener('mouseleave', () => {
+                if (lenis) {
+                    lenis.start();
+                }
+            });
+
+            function smoothScroll() {
+                const diff = targetScroll - scrollPosition;
+                if (Math.abs(diff) > 0.1) {
+                    scrollPosition += diff * 0.1;
+                    scrollContent.style.transform = `translateY(${-scrollPosition}px)`;
+                    requestAnimationFrame(smoothScroll);
+                } else {
+                    isScrolling = false;
+                }
+            }
+
+            demoContainer.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                targetScroll += e.deltaY * 0.8;
+                const maxScroll = scrollContent.offsetHeight - demoContainer.offsetHeight;
+                targetScroll = Math.max(0, Math.min(maxScroll, targetScroll));
+
+                if (!isScrolling) {
+                    isScrolling = true;
+                    smoothScroll();
+                }
+            }, { passive: false });
+
+            // Touch support for mobile
+            let touchStartY = 0;
+            demoContainer.addEventListener('touchstart', (e) => {
+                touchStartY = e.touches[0].clientY;
+            });
+
+            demoContainer.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const touchY = e.touches[0].clientY;
+                const deltaY = touchStartY - touchY;
+                touchStartY = touchY;
+
+                targetScroll += deltaY * 2;
+                const maxScroll = scrollContent.offsetHeight - demoContainer.offsetHeight;
+                targetScroll = Math.max(0, Math.min(maxScroll, targetScroll));
+
+                if (!isScrolling) {
+                    isScrolling = true;
+                    smoothScroll();
+                }
+            }, { passive: false });
+        }
+
+        function setupScrollTriggerDemo() {
+            const demoContainer = document.getElementById('scroll-trigger-demo');
+            if (!demoContainer) return;
+
+            // Prevent page scroll when mouse is over the demo container
+            demoContainer.addEventListener('mouseenter', () => {
+                if (lenis) {
+                    lenis.stop();
+                }
+            });
+
+            demoContainer.addEventListener('mouseleave', () => {
+                if (lenis) {
+                    lenis.start();
+                }
+            });
+
+            // Handle wheel events for scrolling within the container
+            demoContainer.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Scroll the container
+                const currentScroll = demoContainer.scrollTop;
+                const newScroll = currentScroll + (e.deltaY * 0.8);
+                const maxScroll = demoContainer.scrollHeight - demoContainer.clientHeight;
+
+                demoContainer.scrollTop = Math.max(0, Math.min(maxScroll, newScroll));
+            }, { passive: false });
+
+            const elements = demoContainer.querySelectorAll('.scroll-trigger-element');
+
+            elements.forEach((element, index) => {
+                ScrollTrigger.create({
+                    trigger: element,
+                    start: "top 80%",
+                    end: "bottom 20%",
+                    scroller: demoContainer,
+                    onEnter: () => {
+                        gsap.to(element, {
+                            scale: 1.2,
+                            rotation: 360,
+                            duration: 0.8,
+                            ease: "back.out(1.7)"
+                        });
+                    },
+                    onLeave: () => {
+                        gsap.to(element, {
+                            scale: 1,
+                            rotation: 0,
+                            duration: 0.5,
+                            ease: "power2.out"
+                        });
+                    },
+                    onEnterBack: () => {
+                        gsap.to(element, {
+                            scale: 1.2,
+                            rotation: 360,
+                            duration: 0.8,
+                            ease: "back.out(1.7)"
+                        });
+                    },
+                    onLeaveBack: () => {
+                        gsap.to(element, {
+                            scale: 1,
+                            rotation: 0,
+                            duration: 0.5,
+                            ease: "power2.out"
+                        });
+                    }
+                });
+            });
+        }
+
+        function playTimeline() {
+            const shapes = document.querySelectorAll('[id^="timeline-demo-"]');
+            const tl = gsap.timeline();
+
+            shapes.forEach((shape, index) => {
+                tl.to(shape, {
+                    scale: 1.5,
+                    rotation: 360,
+                    duration: 0.8,
+                    ease: "back.out(1.7)"
+                }, index * 0.2)
+                    .to(shape, {
+                        scale: 1,
+                        rotation: 0,
+                        duration: 0.5,
+                        ease: "power2.out"
+                    }, index * 0.2 + 0.8);
+            });
+        }
+
+        function setupMicrointeractions() {
+            const microDemo1 = document.getElementById('micro-demo-1');
+            const microDemo2 = document.getElementById('micro-demo-2');
+            const microDemo3 = document.getElementById('micro-demo-3');
+
+            // Hover interaction with advanced effects
+            if (microDemo1) {
+                microDemo1.addEventListener('mouseenter', () => {
+                    gsap.to(microDemo1, {
+                        scale: 1.05,
+                        rotationY: 15,
+                        duration: 0.3,
+                        ease: "power2.out"
+                    });
+                });
+
+                microDemo1.addEventListener('mouseleave', () => {
+                    gsap.to(microDemo1, {
+                        scale: 1,
+                        rotationY: 0,
+                        duration: 0.3,
+                        ease: "power2.out"
+                    });
+                });
+            }
+
+            // Click interaction with ripple effect
+            if (microDemo2) {
+                microDemo2.addEventListener('click', (e) => {
+                    const rect = microDemo2.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+
+                    const ripple = document.createElement('div');
+                    ripple.className = 'ripple-effect';
+                    ripple.style.left = x + 'px';
+                    ripple.style.top = y + 'px';
+                    ripple.style.width = '0px';
+                    ripple.style.height = '0px';
+
+                    microDemo2.appendChild(ripple);
+
+                    gsap.to(ripple, {
+                        width: '300px',
+                        height: '300px',
+                        x: -150,
+                        y: -150,
+                        opacity: 0,
+                        duration: 0.6,
+                        ease: "power2.out",
+                        onComplete: () => ripple.remove()
+                    });
+
+                    gsap.to(microDemo2, {
+                        scale: 0.95,
+                        duration: 0.1,
+                        yoyo: true,
+                        repeat: 1
+                    });
+                });
+            }
+
+            // Long press interaction
+            if (microDemo3) {
+                let longPressTimer;
+                let pressStartTime;
+
+                microDemo3.addEventListener('mousedown', (e) => {
+                    pressStartTime = Date.now();
+
+                    // Visual feedback for press
+                    gsap.to(microDemo3, {
+                        scale: 0.98,
+                        duration: 0.1
+                    });
+
+                    longPressTimer = setTimeout(() => {
+                        // Long press activated
+                        createParticleBurst(microDemo3, e);
+
+                        gsap.to(microDemo3, {
+                            rotation: 360,
+                            scale: 1.2,
+                            duration: 0.5,
+                            ease: "back.out(1.7)",
+                            onComplete: () => {
+                                gsap.to(microDemo3, {
+                                    rotation: 0,
+                                    scale: 1,
+                                    duration: 0.3
+                                });
+                            }
+                        });
+                    }, 1000);
+                });
+
+                microDemo3.addEventListener('mouseup', () => {
+                    clearTimeout(longPressTimer);
+                    const pressDuration = Date.now() - pressStartTime;
+
+                    if (pressDuration < 1000) {
+                        gsap.to(microDemo3, {
+                            scale: 1,
+                            duration: 0.2
+                        });
+                    }
+                });
+
+                microDemo3.addEventListener('mouseleave', () => {
+                    clearTimeout(longPressTimer);
+                    gsap.to(microDemo3, {
+                        scale: 1,
+                        duration: 0.2
+                    });
+                });
+            }
+        }
+
+        function createParticleBurst(element, event) {
+            const rect = element.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle-burst';
+                particle.style.position = 'fixed';
+                particle.style.left = centerX + 'px';
+                particle.style.top = centerY + 'px';
+                particle.style.width = '6px';
+                particle.style.height = '6px';
+                particle.style.background = `hsl(${Math.random() * 360}, 70%, 60%)`;
+                particle.style.borderRadius = '50%';
+                particle.style.zIndex = '9999';
+
+                document.body.appendChild(particle);
+
+                const angle = (i / 20) * Math.PI * 2;
+                const distance = Math.random() * 100 + 50;
+
+                gsap.to(particle, {
+                    x: Math.cos(angle) * distance,
+                    y: Math.sin(angle) * distance,
+                    opacity: 0,
+                    scale: 0,
+                    duration: 1,
+                    ease: "power2.out",
+                    onComplete: () => particle.remove()
+                });
+            }
+        }
+
+        function demonstrateEasing() {
+            const balls = [
+                { id: 'easing-power2', ease: 'power2.out' },
+                { id: 'easing-back', ease: 'back.out(1.7)' },
+                { id: 'easing-elastic', ease: 'elastic.out(1, 0.3)' },
+                { id: 'easing-bounce', ease: 'bounce.out' }
+            ];
+
+            balls.forEach((ball, index) => {
+                const element = document.getElementById(ball.id);
+                if (element) {
+                    const track = element.parentElement;
+
+                    // Wait for next frame to ensure proper sizing
+                    requestAnimationFrame(() => {
+                        const trackRect = track.getBoundingClientRect();
+                        const ballRect = element.getBoundingClientRect();
+                        const maxPosition = trackRect.width - ballRect.width - 20; // 20px for padding
+
+                        // Reset position
+                        gsap.set(element, { x: 10 });
+
+                        // Animate to the right
+                        gsap.to(element, {
+                            x: maxPosition,
+                            duration: 2,
+                            ease: ball.ease,
+                            delay: index * 0.3,
+                            onComplete: () => {
+                                // Return to start position
+                                gsap.to(element, {
+                                    x: 10,
+                                    duration: 1,
+                                    ease: 'power2.inOut',
+                                    delay: 0.5
+                                });
+                            }
+                        });
+                    });
+                }
+            });
+        }
+
+        function setupGrandFinale() {
+            createMatrixRain();
+            createNeuralNetwork();
+            setupOrbitingElements();
+        }
+
+        function createMatrixRain() {
+            const container = document.getElementById('matrix-rain');
+            if (!container) return;
+
+            const characters = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+
+            for (let i = 0; i < 20; i++) {
+                const column = document.createElement('div');
+                column.className = 'matrix-column';
+                column.style.left = Math.random() * 100 + '%';
+                column.style.animationDelay = Math.random() * 3 + 's';
+                column.style.animationDuration = (Math.random() * 2 + 2) + 's';
+
+                let text = '';
+                for (let j = 0; j < 20; j++) {
+                    text += characters[Math.floor(Math.random() * characters.length)] + '<br>';
+                }
+                column.innerHTML = text;
+
+                container.appendChild(column);
+            }
+        }
+
+        function createNeuralNetwork() {
+            const container = document.getElementById('neural-network');
+            if (!container) return;
+
+            const nodes = [];
+            const connections = [];
+
+            // Create nodes
+            for (let i = 0; i < 15; i++) {
+                const node = document.createElement('div');
+                node.className = 'neural-node';
+                node.style.left = Math.random() * 90 + 5 + '%';
+                node.style.top = Math.random() * 90 + 5 + '%';
+                container.appendChild(node);
+                nodes.push(node);
+
+                // Animate node pulsing
+                gsap.to(node, {
+                    scale: 1.5,
+                    duration: Math.random() * 2 + 1,
+                    repeat: -1,
+                    yoyo: true,
+                    ease: "sine.inOut",
+                    delay: Math.random() * 2
+                });
+            }
+
+            // Create connections
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    if (Math.random() > 0.7) {
+                        const connection = document.createElement('div');
+                        connection.className = 'neural-connection';
+
+                        const rect1 = nodes[i].getBoundingClientRect();
+                        const rect2 = nodes[j].getBoundingClientRect();
+                        const containerRect = container.getBoundingClientRect();
+
+                        const x1 = rect1.left - containerRect.left + 5;
+                        const y1 = rect1.top - containerRect.top + 5;
+                        const x2 = rect2.left - containerRect.left + 5;
+                        const y2 = rect2.top - containerRect.top + 5;
+
+                        const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                        const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+                        connection.style.left = x1 + 'px';
+                        connection.style.top = y1 + 'px';
+                        connection.style.width = distance + 'px';
+                        connection.style.transform = `rotate(${angle}deg)`;
+
+                        container.appendChild(connection);
+                        connections.push(connection);
+
+                        // Animate connection
+                        gsap.to(connection, {
+                            opacity: 0.8,
+                            duration: 2,
+                            repeat: -1,
+                            yoyo: true,
+                            ease: "sine.inOut",
+                            delay: Math.random() * 2
+                        });
+                    }
+                }
+            }
+        }
+
+        function setupOrbitingElements() {
+            const orbits = ['orbit-1', 'orbit-2', 'orbit-3'];
+
+            orbits.forEach((id, index) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    gsap.to(element, {
+                        rotation: 360,
+                        duration: 3 + index,
+                        repeat: -1,
+                        ease: "none",
+                        transformOrigin: "150px 150px"
+                    });
+                }
+            });
+        }
+
+        function triggerGrandFinale() {
+            animationCount = 0;
+
+            // Logo explosion
+            const logo = document.getElementById('morphing-logo');
+            gsap.to(logo, {
+                scale: 2,
+                rotation: 720,
+                duration: 2,
+                ease: "power2.out",
+                onComplete: () => {
+                    gsap.to(logo, {
+                        scale: 1,
+                        rotation: 0,
+                        duration: 1,
+                        ease: "elastic.out(1, 0.3)"
+                    });
+                }
+            });
+
+            // Particle explosion
+            createMassiveParticleExplosion();
+
+            // Speed up all animations
+            gsap.globalTimeline.timeScale(2);
+            setTimeout(() => {
+                gsap.globalTimeline.timeScale(1);
+            }, 3000);
+
+            // Update stats
+            updateFinalStats();
+        }
+
+        function createMassiveParticleExplosion() {
+            const container = document.querySelector('.final-demo-container');
+            const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#f093fb', '#f5576c'];
+
+            for (let i = 0; i < 200; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'absolute';
+                particle.style.width = Math.random() * 8 + 4 + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.borderRadius = '50%';
+                particle.style.left = '50%';
+                particle.style.top = '50%';
+                particle.style.pointerEvents = 'none';
+                particle.style.zIndex = '5';
+
+                container.appendChild(particle);
+
+                const angle = (Math.random() * 360) * Math.PI / 180;
+                const distance = Math.random() * 300 + 100;
+                const duration = Math.random() * 3 + 2;
+
+                gsap.to(particle, {
+                    x: Math.cos(angle) * distance,
+                    y: Math.sin(angle) * distance,
+                    opacity: 0,
+                    scale: 0,
+                    rotation: Math.random() * 360,
+                    duration: duration,
+                    ease: "power2.out",
+                    onComplete: () => {
+                        particle.remove();
+                        animationCount--;
+                    }
+                });
+
+                animationCount++;
+            }
+        }
+
+        function updateFinalStats() {
+            const stats = {
+                elements: document.querySelectorAll('.neural-node').length,
+                particles: document.querySelectorAll('.particle-burst').length,
+                connections: document.querySelectorAll('.neural-connection').length
+            };
+
+            document.getElementById('element-count').textContent = stats.elements;
+            document.getElementById('particle-count').textContent = stats.particles;
+            document.getElementById('connection-count').textContent = stats.connections;
+        }
+
+        // ScrollTrigger animations
+        function setupScrollTriggers() {
+            // Slide entrance animations
+            gsap.utils.toArray('.slide').forEach((slide, index) => {
+                if (index === 0) return;
+
+                ScrollTrigger.create({
+                    trigger: slide,
+                    start: "top 80%",
+                    end: "bottom 20%",
+                    onEnter: () => {
+                        const slideContent = slide.querySelector('.slide-content');
+                        if (slideContent) {
+                            gsap.from(slideContent, {
+                                y: 100,
+                                opacity: 0,
+                                duration: 1,
+                                ease: "power2.out"
+                            });
+                        }
+                    }
+                });
+            });
+
+            // Parallax background effects
+            gsap.utils.toArray('.slide-bg').forEach(bg => {
+                ScrollTrigger.create({
+                    trigger: bg.parentElement,
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: 1,
+                    animation: gsap.to(bg, {
+                        y: -100,
+                        ease: "none"
+                    })
+                });
+            });
+
+            // Code block animations
+            gsap.utils.toArray('.code-block').forEach(block => {
+                ScrollTrigger.create({
+                    trigger: block,
+                    start: "top 80%",
+                    onEnter: () => {
+                        gsap.from(block, {
+                            scale: 0.9,
+                            opacity: 0,
+                            duration: 0.8,
+                            ease: "back.out(1.7)"
+                        });
+                    }
+                });
+            });
+
+            // Tech stack items
+            gsap.utils.toArray('.tech-item').forEach((item, index) => {
+                ScrollTrigger.create({
+                    trigger: item,
+                    start: "top 90%",
+                    onEnter: () => {
+                        gsap.from(item, {
+                            y: 50,
+                            opacity: 0,
+                            duration: 0.6,
+                            delay: index * 0.1,
+                            ease: "power2.out"
+                        });
+                    }
+                });
+            });
+        }
+
+        // Keyboard navigation
+        function setupKeyboardNavigation() {
+            document.addEventListener('keydown', (e) => {
+                switch (e.key) {
+                    case 'ArrowRight':
+                    case ' ':
+                        e.preventDefault();
+                        nextSlide();
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        previousSlide();
+                        break;
+                    case 'Home':
+                        e.preventDefault();
+                        currentSlideIndex = 0;
+                        goToSlide(0);
+                        break;
+                    case 'End':
+                        e.preventDefault();
+                        currentSlideIndex = totalSlides - 1;
+                        goToSlide(totalSlides - 1);
+                        break;
+                }
+            });
+        }
+
+        // Touch/swipe support
+        function setupTouchNavigation() {
+            let startX = 0;
+            let startY = 0;
+
+            document.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            });
+
+            document.addEventListener('touchmove', (e) => {
+                // Allow scrolling in demo containers
+                if (e.target.closest('.scroll-trigger-demo') ||
+                    e.target.closest('.smooth-scroll-demo') ||
+                    e.target.closest('.easing-track')) {
+                    return;
+                }
+                e.preventDefault();
+            }, { passive: false });
+
+            document.addEventListener('touchend', (e) => {
+                const endX = e.changedTouches[0].clientX;
+                const endY = e.changedTouches[0].clientY;
+
+                const deltaX = endX - startX;
+                const deltaY = endY - startY;
+
+                if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+                    if (deltaX > 0) {
+                        previousSlide();
+                    } else {
+                        nextSlide();
+                    }
+                }
+            });
+        }
+
+        // Utility functions
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function exportPresentation() {
+            const presentationData = {
+                totalSlides: totalSlides,
+                currentSlide: currentSlideIndex,
+                performance: performanceMetrics,
+                timestamp: Date.now(),
+                animations: animationCount
+            };
+
+            const blob = new Blob([JSON.stringify(presentationData, null, 2)], {
+                type: 'application/json'
+            });
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'motion-presentation-data.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Initialize everything
+        function init() {
+            // Initialize Lenis first
+            initializeLenis();
+
+            // Then initialize other components
+            createParticles();
+            setupInteractiveElements();
+            setupScrollTriggers();
+            setupKeyboardNavigation();
+            setupTouchNavigation();
+
+            setupRemoteControl();
+
+            // Update slide counter
+            document.getElementById('totalSlides').textContent = totalSlides;
+
+            // Initial slide setup
+            const firstSlideContent = document.querySelector('#slide-1 .slide-content');
+            if (firstSlideContent) {
+                gsap.from(firstSlideContent, {
+                    y: 100,
+                    opacity: 0,
+                    duration: 1.5,
+                    ease: "power2.out",
+                    delay: 0.5
+                });
+            }
+
+            // Performance optimization
+            gsap.set('.slide', { willChange: 'transform' });
+
+            // Start performance monitoring
+            updatePerformanceMetrics();
+        }
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', init);
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (lenis) {
+                lenis.destroy();
+            }
+        });
+
+        // Easter egg - Konami code for special effects
+        const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'KeyB', 'KeyA'];
+        let konamiIndex = 0;
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === konamiCode[konamiIndex]) {
+                konamiIndex++;
+                if (konamiIndex === konamiCode.length) {
+                    // Activate rainbow mode
+                    document.body.style.filter = 'hue-rotate(0deg)';
+
+                    let hue = 0;
+                    const rainbowInterval = setInterval(() => {
+                        hue += 10;
+                        document.body.style.filter = `hue-rotate(${hue}deg)`;
+                        if (hue >= 360) {
+                            clearInterval(rainbowInterval);
+                            document.body.style.filter = 'none';
+                        }
+                    }, 50);
+
+                    konamiIndex = 0;
+                }
+            } else {
+                konamiIndex = 0;
+            }
+        });
+
+        // Advanced performance monitoring
+        function startAdvancedMonitoring() {
+            const observer = new PerformanceObserver((list) => {
+                const entries = list.getEntries();
+                entries.forEach(entry => {
+                    if (entry.entryType === 'navigation') {
+                        console.log('Navigation timing:', entry);
+                    }
+                });
+            });
+
+            observer.observe({ entryTypes: ['navigation', 'paint'] });
+        }
+
+        // Auto-presentation mode
+        let autoPresentationMode = false;
+        let autoPresentationInterval;
+
+        function toggleAutoPresentationMode() {
+            autoPresentationMode = !autoPresentationMode;
+
+            if (autoPresentationMode) {
+                autoPresentationInterval = setInterval(() => {
+                    if (currentSlideIndex < totalSlides - 1) {
+                        nextSlide();
+                    } else {
+                        currentSlideIndex = 0;
+                        goToSlide(0);
+                    }
+                }, 15000); // 15 seconds per slide
+
+                console.log('Auto-presentation mode enabled');
+            } else {
+                clearInterval(autoPresentationInterval);
+                console.log('Auto-presentation mode disabled');
+            }
+        }
+
+        // Add auto-presentation toggle to controls
+        document.addEventListener('DOMContentLoaded', () => {
+            const autoBtn = document.createElement('button');
+            autoBtn.textContent = '⏯️';
+            autoBtn.className = 'nav-btn';
+            autoBtn.onclick = toggleAutoPresentationMode;
+            autoBtn.title = 'Toggle Auto-Presentation';
+
+            const controls = document.querySelector('.presentation-controls');
+            if (controls) {
+                controls.appendChild(autoBtn);
+            }
+        });
+
+        // Advanced gesture controls
+        function setupAdvancedGestures() {
+            let hammer = null;
+
+            // Check if HammerJS is available (would need to be included separately)
+            if (typeof Hammer !== 'undefined') {
+                hammer = new Hammer(document.body);
+
+                hammer.get('swipe').set({ direction: Hammer.DIRECTION_ALL });
+                hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL });
+
+                hammer.on('swipeleft', () => nextSlide());
+                hammer.on('swiperight', () => previousSlide());
+                hammer.on('swipeup', () => {
+                    currentSlideIndex = 0;
+                    goToSlide(0);
+                });
+                hammer.on('swipedown', () => {
+                    currentSlideIndex = totalSlides - 1;
+                    goToSlide(totalSlides - 1);
+                });
+            }
+        }
+
+        // Performance analytics
+        class PresentationAnalytics {
+            constructor() {
+                this.startTime = Date.now();
+                this.slideTimings = [];
+                this.interactions = [];
+                this.performance = [];
+            }
+
+            recordSlideChange(from, to) {
+                this.slideTimings.push({
+                    from,
+                    to,
+                    timestamp: Date.now(),
+                    duration: Date.now() - this.startTime
+                });
+            }
+
+            recordInteraction(type, element) {
+                this.interactions.push({
+                    type,
+                    element,
+                    timestamp: Date.now()
+                });
+            }
+
+            recordPerformance(fps, frameTime) {
+                this.performance.push({
+                    fps,
+                    frameTime,
+                    timestamp: Date.now()
+                });
+            }
+
+            generateReport() {
+                const totalTime = Date.now() - this.startTime;
+                const avgFPS = this.performance.reduce((sum, p) => sum + p.fps, 0) / this.performance.length;
+
+                return {
+                    totalPresentationTime: totalTime,
+                    slideChanges: this.slideTimings.length,
+                    interactions: this.interactions.length,
+                    averageFPS: avgFPS,
+                    performanceScore: avgFPS > 55 ? 'Excellent' : avgFPS > 45 ? 'Good' : 'Needs Improvement'
+                };
+            }
+        }
+
+        const analytics = new PresentationAnalytics();
+
+        // Enhanced WebSocket remote control
+        class RemoteControl {
+            constructor() {
+                this.ws = null;
+                this.isConnected = false;
+                this.reconnectInterval = 5000;
+                this.commands = {
+                    'next': () => nextSlide(),
+                    'previous': () => previousSlide(),
+                    'goto': (slideNumber) => {
+                        currentSlideIndex = slideNumber - 1;
+                        goToSlide(currentSlideIndex);
+                    },
+                    'play_timeline': () => playTimeline(),
+                    'demonstrate_easing': () => demonstrateEasing(),
+                    'trigger_finale': () => triggerGrandFinale(),
+                    'toggle_auto': () => toggleAutoPresentationMode(),
+                    'fullscreen': () => toggleFullscreen(),
+                    'reset': () => {
+                        currentSlideIndex = 0;
+                        goToSlide(0);
+                        presentationTimer.reset();
+                        presentationTimer.start();
+                    }
+                };
+                this.setupUI();
+            }
+
+            connect(url = 'ws://localhost:8080/presentation') {
+                try {
+                    this.ws = new WebSocket(url);
+
+                    this.ws.onopen = () => {
+                        this.isConnected = true;
+                        this.showStatus('Connected to remote control', 'success');
+                        console.log('🔗 WebSocket connected for remote control');
+
+                        // Send initial state
+                        this.sendState();
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            this.handleCommand(data);
+                        } catch (error) {
+                            console.error('Error parsing WebSocket message:', error);
+                        }
+                    };
+
+                    this.ws.onclose = () => {
+                        this.isConnected = false;
+                        this.showStatus('Disconnected from remote control', 'warning');
+                        console.log('🔌 WebSocket disconnected');
+
+                        // Auto-reconnect
+                        setTimeout(() => this.connect(url), this.reconnectInterval);
+                    };
+
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        this.showStatus('Connection error', 'error');
+                    };
+
+                } catch (error) {
+                    console.error('Failed to connect WebSocket:', error);
+                    this.showStatus('Failed to connect', 'error');
+                }
+            }
+
+            handleCommand(data) {
+                const { command, params } = data;
+
+                console.log(`🎮 Remote command: ${command}`, params);
+
+                if (this.commands[command]) {
+                    if (params) {
+                        this.commands[command](params);
+                    } else {
+                        this.commands[command]();
+                    }
+
+                    // Send acknowledgment
+                    this.sendMessage({
+                        type: 'ack',
+                        command,
+                        timestamp: Date.now()
+                    });
+
+                    // Update state
+                    this.sendState();
+                } else {
+                    console.warn('Unknown command:', command);
+                }
+            }
+
+            sendMessage(data) {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify(data));
+                }
+            }
+
+            sendState() {
+                const state = {
+                    type: 'state',
+                    currentSlide: currentSlideIndex + 1,
+                    totalSlides: totalSlides,
+                    isAutoMode: autoPresentationMode,
+                    performance: performanceMetrics,
+                    timestamp: Date.now()
+                };
+
+                this.sendMessage(state);
+            }
+
+            setupUI() {
+                const statusDiv = document.createElement('div');
+                statusDiv.id = 'remote-status';
+                statusDiv.style.cssText = `
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+        `;
+                document.body.appendChild(statusDiv);
+
+                // Add connect button to controls
+                const connectBtn = document.createElement('button');
+                connectBtn.textContent = '📡';
+                connectBtn.className = 'nav-btn';
+                connectBtn.onclick = () => this.connect();
+                connectBtn.title = 'Connect Remote Control';
+
+                const controls = document.querySelector('.presentation-controls');
+                if (controls) {
+                    controls.appendChild(connectBtn);
+                }
+            }
+
+            showStatus(message, type = 'info') {
+                const statusDiv = document.getElementById('remote-status');
+                if (!statusDiv) return;
+
+                statusDiv.textContent = message;
+                statusDiv.style.opacity = '1';
+
+                const colors = {
+                    success: '#4ecdc4',
+                    warning: '#f093fb',
+                    error: '#ff6b6b',
+                    info: '#45b7d1'
+                };
+
+                statusDiv.style.borderLeft = `4px solid ${colors[type]}`;
+
+                setTimeout(() => {
+                    statusDiv.style.opacity = '0';
+                }, 3000);
+            }
+        }
+
+        // Initialize remote control
+        const remoteControl = new RemoteControl();
+
+        function setupRemoteControl() {
+            // Add keyboard shortcut for manual connection
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'w') {
+                    e.preventDefault();
+                    remoteControl.connect();
+                }
+            });
+        }
+
+
+        // Voice control (experimental)
+        function setupVoiceControl() {
+            if ('webkitSpeechRecognition' in window) {
+                const recognition = new webkitSpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+
+                recognition.onresult = function (event) {
+                    const command = event.results[event.results.length - 1][0].transcript.toLowerCase();
+
+                    if (command.includes('next slide')) {
+                        nextSlide();
+                    } else if (command.includes('previous slide')) {
+                        previousSlide();
+                    } else if (command.includes('first slide')) {
+                        currentSlideIndex = 0;
+                        goToSlide(0);
+                    } else if (command.includes('last slide')) {
+                        currentSlideIndex = totalSlides - 1;
+                        goToSlide(totalSlides - 1);
+                    } else if (command.includes('demo')) {
+                        // Trigger appropriate demo based on current slide
+                        if (currentSlideIndex === 3) playTimeline();
+                        else if (currentSlideIndex === 7) demonstrateEasing();
+                        else if (currentSlideIndex === 9) triggerGrandFinale();
+                    }
+                };
+
+                // Start/stop voice control with 'V' key
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'v' && e.ctrlKey) {
+                        if (recognition.running) {
+                            recognition.stop();
+                            console.log('Voice control stopped');
+                        } else {
+                            recognition.start();
+                            console.log('Voice control started');
+                        }
+                    }
+                });
+            }
+        }
+
+        // Presentation timer
+        class PresentationTimer {
+            constructor() {
+                this.startTime = null;
+                this.pausedTime = 0;
+                this.isPaused = false;
+                this.element = null;
+                this.createTimerDisplay();
+            }
+
+            createTimerDisplay() {
+                this.element = document.createElement('div');
+                this.element.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    padding: 0.5rem 1rem;
+                    border-radius: 20px;
+                    font-family: monospace;
+                    font-size: 1rem;
+                    z-index: 1000;
+                    backdrop-filter: blur(10px);
+                `;
+                document.body.appendChild(this.element);
+            }
+
+            start() {
+                this.startTime = Date.now();
+                this.updateDisplay();
+            }
+
+            pause() {
+                this.isPaused = true;
+                this.pausedTime = Date.now();
+            }
+
+            resume() {
+                if (this.isPaused) {
+                    this.startTime += Date.now() - this.pausedTime;
+                    this.isPaused = false;
+                }
+            }
+
+            updateDisplay() {
+                if (this.startTime && !this.isPaused) {
+                    const elapsed = Date.now() - this.startTime;
+                    const minutes = Math.floor(elapsed / 60000);
+                    const seconds = Math.floor((elapsed % 60000) / 1000);
+                    this.element.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+
+                if (!this.isPaused) {
+                    requestAnimationFrame(() => this.updateDisplay());
+                }
+            }
+
+            reset() {
+                this.startTime = null;
+                this.pausedTime = 0;
+                this.isPaused = false;
+                this.element.textContent = '00:00';
+            }
+        }
+
+        const presentationTimer = new PresentationTimer();
+
+        // Enhanced initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            // Start advanced monitoring
+            startAdvancedMonitoring();
+
+            // Setup advanced features
+            setupAdvancedGestures();
+            setupRemoteControl();
+            setupVoiceControl();
+
+            // Start presentation timer
+            presentationTimer.start();
+
+            // Add keyboard shortcuts info
+            console.log(`
+🎯 PRESENTATION CONTROLS:
+• Arrow keys / Space: Navigate slides
+• Home/End: First/Last slide
+• F11: Fullscreen
+• Ctrl+V: Toggle voice control
+• Ctrl+A: Toggle auto-presentation
+• Ctrl+E: Export analytics
+• Ctrl+R: Reset presentation
+• Konami Code: Rainbow mode 🌈
+
+🚀 DEMO SHORTCUTS:
+• Slide 2: Hover animated element
+• Slide 4: Click "Play Timeline"
+• Slide 7: Try all microinteractions
+• Slide 8: Click "Demonstrate Easing"
+• Slide 10: Click "UNLEASH THE POWER"
+            `);
+        });
+
+        // Additional keyboard shortcuts
+        // Additional keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey) {
+                switch (e.key) {
+                    case 'a':
+                        e.preventDefault();
+                        toggleAutoPresentationMode();
+                        break;
+                    case 'e':
+                        e.preventDefault();
+                        const report = analytics.generateReport();
+                        console.log('Presentation Analytics:', report);
+                        break;
+                    case 'r':
+                        e.preventDefault();
+                        if (confirm('Reset presentation?')) {
+                            currentSlideIndex = 0;
+                            goToSlide(0);
+                            presentationTimer.reset();
+                            presentationTimer.start();
+                        }
+                        break;
+                    case 'w':
+                        e.preventDefault();
+                        remoteControl.connect();
+                        break;
+                }
+            }
+        });
+
+
+        // Export enhanced presentation data
+        function exportEnhancedPresentation() {
+            const enhancedData = {
+                ...analytics.generateReport(),
+                slides: totalSlides,
+                currentSlide: currentSlideIndex,
+                performance: performanceMetrics,
+                timestamp: Date.now(),
+                userAgent: navigator.userAgent,
+                viewport: {
+                    width: window.innerWidth,
+                    height: window.innerHeight
+                }
+            };
+
+            const blob = new Blob([JSON.stringify(enhancedData, null, 2)], {
+                type: 'application/json'
+            });
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `motion-presentation-analytics-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Update export function
+        function exportPresentation() {
+            exportEnhancedPresentation();
+        }
+
+        // Add final presentation notes
+        console.log(`
+🎨 MOTION PRESENTATION LOADED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This presentation demonstrates advanced animation techniques for senior developers:
+
+✨ Features Implemented:
+• 60fps performance monitoring
+• Buttery smooth Lenis scrolling
+• Advanced GSAP timeline orchestration
+• Complex microinteraction patterns
+• ScrollTrigger viewport animations
+• Neural network visualization
+• Matrix rain effects
+• Particle system explosions
+• Holographic scanning effects
+• Advanced easing demonstrations
+• Voice control integration
+• Remote presentation capabilities
+• Analytics and performance tracking
+
+🎯 Technical Stack:
+• GSAP 3.12 with ScrollTrigger
+• Lenis smooth scrolling
+• Custom performance monitoring
+• Advanced CSS animations
+• WebGL-style effects in CSS
+• Responsive design patterns
+• Touch gesture support
+• Keyboard navigation
+• Accessibility considerations
+
+🚀 Ready for production deployment!
+        `);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "motion-presentation-remote",
+  "version": "1.0.0",
+  "description": "Remote control server for motion presentation",
+  "main": "remote-control-server.js",
+  "scripts": {
+    "start": "node remote-control-server.js",
+    "dev": "nodemon remote-control-server.js"
+  },
+  "dependencies": {
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
