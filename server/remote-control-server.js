@@ -1,5 +1,5 @@
-const WebSocket = require('ws');
-const http = require('http');
+import { WebSocketServer } from 'ws';
+import { createServer } from 'http';
 
 class PresentationServer {
     constructor(port = process.env.PORT || 8080) {
@@ -20,7 +20,7 @@ class PresentationServer {
     
     setupServer() {
         // Create HTTP server to handle web requests
-        this.httpServer = http.createServer((req, res) => {
+        this.httpServer = createServer((req, res) => {
             // Add CORS headers for cross-origin requests
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
@@ -33,10 +33,24 @@ class PresentationServer {
                 res.writeHead(200, { 'Content-Type': 'text/html' });
                 res.end(`
                     <h1>🎯 Motion Presentation Server</h1>
-                    <p>Server is running on port ${this.port}!</p>
-                    <p><a href="/control">Remote Control Interface</a></p>
-                    <p><a href="https://YOUR-GITHUB-USERNAME.github.io/motion-presentation" target="_blank">View Presentation</a></p>
+                    <p>✅ Server is running on port ${this.port}!</p>
+                    <p>🌍 Environment: ${process.env.NODE_ENV || 'development'}</p>
+                    <p><a href="/control">🎮 Remote Control Interface</a></p>
+                    <p><a href="https://YOUR-GITHUB-USERNAME.github.io/motion-presentation" target="_blank">📺 View Presentation</a></p>
+                    <hr>
+                    <h3>🔗 WebSocket Info:</h3>
+                    <p>Endpoint: wss://motion-presentation-server.onrender.com/presentation</p>
+                    <p>Connected clients: ${this.clients.size}</p>
                 `);
+            } else if (req.url === '/health') {
+                // Health check endpoint for Render
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ 
+                    status: 'healthy', 
+                    port: this.port,
+                    clients: this.clients.size,
+                    timestamp: new Date().toISOString()
+                }));
             } else {
                 // Return 404 for unknown routes
                 res.writeHead(404);
@@ -45,7 +59,7 @@ class PresentationServer {
         });
         
         // Create WebSocket server attached to HTTP server
-        this.wss = new WebSocket.Server({ 
+        this.wss = new WebSocketServer({ 
             server: this.httpServer,
             path: '/presentation'
         });
@@ -86,10 +100,10 @@ class PresentationServer {
         });
         
         // Start the HTTP server listening on specified port
-        this.httpServer.listen(this.port, () => {
+        this.httpServer.listen(this.port, '0.0.0.0', () => {
             console.log(`🚀 Presentation server running on port ${this.port}`);
-            console.log(`📱 Control interface: http://localhost:${this.port}/control`);
-            console.log(`🔗 WebSocket endpoint: ws://localhost:${this.port}/presentation`);
+            console.log(`📱 Control interface: https://motion-presentation-server.onrender.com/control`);
+            console.log(`🔗 WebSocket endpoint: wss://motion-presentation-server.onrender.com/presentation`);
         });
     }
     
@@ -123,8 +137,8 @@ class PresentationServer {
         const isProduction = process.env.NODE_ENV === 'production';
         // Use secure WebSocket protocol in production
         const wsProtocol = isProduction ? 'wss' : 'ws';
-        // **THIS IS WHERE YOU NEED TO CHANGE THE URL**
-        const serverHost = isProduction ? 'motion-presentation.onrender.com' : 'localhost';
+        // **UPDATED SERVER URL**
+        const serverHost = isProduction ? 'motion-presentation-server.onrender.com' : 'localhost';
         // Use environment port or default port
         const serverPort = isProduction ? '' : `:${this.port}`;
         
@@ -217,6 +231,16 @@ class PresentationServer {
         .connected { background: rgba(78, 205, 196, 0.2); }
         /* Disconnected state styling */
         .disconnected { background: rgba(255, 107, 107, 0.2); }
+        /* Debug info styling */
+        .debug { 
+            background: rgba(255, 255, 255, 0.05); 
+            padding: 1rem; 
+            border-radius: 5px; 
+            margin-top: 2rem; 
+            font-family: monospace; 
+            font-size: 0.8rem;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
@@ -251,6 +275,14 @@ class PresentationServer {
             <button class="btn" onclick="sendCommand('fullscreen')">Fullscreen</button>
             <button class="btn" onclick="sendCommand('reset')">Reset</button>
         </div>
+        
+        <!-- Debug information -->
+        <div class="debug">
+            <strong>🔧 Debug Info:</strong><br>
+            WebSocket URL: ${wsProtocol}://${serverHost}${serverPort}/presentation<br>
+            Environment: ${process.env.NODE_ENV || 'development'}<br>
+            Server: ${serverHost}
+        </div>
     </div>
 
     <script>
@@ -261,19 +293,22 @@ class PresentationServer {
         
         // Function to establish WebSocket connection
         function connect() {
-            // **THIS IS THE UPDATED WEBSOCKET URL**
+            // **UPDATED WEBSOCKET URL**
             const wsUrl = '${wsProtocol}://${serverHost}${serverPort}/presentation';
+            console.log('🔗 Connecting to:', wsUrl);
             ws = new WebSocket(wsUrl);
             
             // Handle successful connection
             ws.onopen = () => {
                 isConnected = true;
-                updateConnectionStatus('Connected', true);
+                updateConnectionStatus('Connected ✅', true);
+                console.log('✅ Connected to WebSocket');
             };
             
             // Handle incoming messages
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
+                console.log('📨 Received:', data);
                 if (data.type === 'state') {
                     updateStatus(data);
                 }
@@ -282,14 +317,16 @@ class PresentationServer {
             // Handle connection close
             ws.onclose = () => {
                 isConnected = false;
-                updateConnectionStatus('Disconnected', false);
+                updateConnectionStatus('Disconnected ❌', false);
+                console.log('❌ WebSocket disconnected');
                 // Attempt to reconnect after 3 seconds
                 setTimeout(connect, 3000);
             };
             
             // Handle connection errors
-            ws.onerror = () => {
-                updateConnectionStatus('Connection Error', false);
+            ws.onerror = (error) => {
+                console.error('⚠️ WebSocket error:', error);
+                updateConnectionStatus('Connection Error ⚠️', false);
             };
         }
         
@@ -302,6 +339,9 @@ class PresentationServer {
                     params: params,
                     timestamp: Date.now()
                 }));
+                console.log('📤 Sent command:', command, params);
+            } else {
+                console.log('❌ WebSocket not connected');
             }
         }
         
